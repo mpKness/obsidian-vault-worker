@@ -15,17 +15,32 @@ Obsidian (Android) ─┘
 
 | Tool | What it does |
 |------|--------------|
-| `list_notes` | List notes, optionally under a folder |
-| `get_note` | Read one note |
-| `batch_get_notes` | Read up to 50 notes |
-| `search_notes` | Case-insensitive search over contents and file names |
-| `create_note` | Write a note directly (folders in `WRITE_ALLOW_PREFIXES`) |
-| `draft_note` | Write a note into `_Staging/` for review |
+| `list_notes(folder?)` | List notes, optionally under a folder |
+| `get_note(path)` | Read one note → `{path, etag, content}` |
+| `batch_get_notes(paths[≤50])` | Read up to 50 notes → `[{path, etag, content}]` |
+| `search_notes(q, folder?, limit?)` | Case-insensitive search over contents and file names |
+| `create_note(path, content, overwrite?, if_match?)` | Write a whole note. Create-only unless `overwrite` |
+| `draft_note(path, content, overwrite?, if_match?)` | Same, but into `_Staging/` for review |
+| `update_note(path, mode, content, target?, if_match?)` | Edit part of a note: `replace_section`, `append_section`, `prepend`, `append` |
+| `set_frontmatter_key(path, key, value, if_match?)` | Set one frontmatter key (`null` deletes) |
+| `create_session_from_template(session_number, title?, date?)` | New session note from `Templates/Session.md.md` |
+| `get_campaign_state()` | Dashboard, TODO, newest session, PCs/plots/NPCs, and warnings in one call |
 
-Writes never replace an existing note unless the call passes `overwrite: true`,
-and every overwrite first copies the old version into the
-`obsidian-vault-history` bucket (key: `<path>@<timestamp>`), which doesn't sync
-into Obsidian.
+### Editing rules
+
+- **Sections.** A section is a heading plus everything up to the next heading of the
+  same or higher level, so a `#` section includes its `##` subsections. A trailing
+  `---` divider at the end of a section is kept when the section is replaced. `---`
+  anywhere but line 1 is ordinary content, and `#` lines inside code fences are
+  never headings. A missing or duplicated heading is an error that lists every
+  heading in the note; nothing is ever silently skipped.
+- **Etags.** Reads return each note's R2 etag. Pass it back as `if_match` on a
+  write: if the note changed in between (for example, a phone edit synced to R2),
+  the write is refused and the error returns the current etag and content to
+  merge into. Every write is also conditional on the version it read, enforced by
+  R2, so two writers can't silently overwrite each other.
+- **History.** Every overwrite or edit saves the previous version to the
+  `obsidian-vault-history` bucket as `<path>@<timestamp>`.
 
 ## Security
 
@@ -125,6 +140,8 @@ app signed into your account, phone included.
 | `READ_ALLOW_PREFIXES` | all | Comma-separated folders Claude may read |
 | `WRITE_ALLOW_PREFIXES` | `*` | Folders `create_note` may write to. `*` = anywhere, empty = drafts only |
 | `STAGING_PREFIX` | `_Staging` | Where `draft_note` writes |
+| `CAMPAIGN_ROOT` | `Degrees of Horror` | Campaign folder for the session and campaign-state tools |
+| `TEMPLATES_DIR` | `Templates` | Where `create_session_from_template` looks for `Session.md.md` |
 
 ## Limits
 
@@ -132,7 +149,17 @@ On the free Workers plan a request can make 1,000 calls to R2, so `search_notes`
 reads at most 900 notes per call and says so if the vault is bigger (pass
 `folder` to narrow it). If the vault outgrows that, the $5/month plan lifts it.
 
-## Local testing
+## Tests
+
+```bash
+npm test
+```
+
+Tests run inside the Workers runtime against local R2 buckets
+(`@cloudflare/vitest-plugin`). `test/markdown.test.ts` covers the section and
+frontmatter parser; `test/tools.test.ts` makes real MCP calls to every tool.
+
+## Local testing by hand
 
 ```bash
 # Tools only, no auth, against a local R2 bucket:
@@ -142,4 +169,3 @@ cd test && npx wrangler dev -c wrangler.auth.jsonc --port 8798
 ```
 
 The files in `test/` are local harnesses. Never deploy them.
-# obsidian-vault-worker

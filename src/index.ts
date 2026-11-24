@@ -10,6 +10,8 @@ function vaultFor(env: Env) {
   if (prefix) prefix += "/";
   const writeAllow = parseList(env.WRITE_ALLOW_PREFIXES);
   const stagingPrefix = cleanPath(env.STAGING_PREFIX || "_Staging");
+  const campaignRoot = cleanPath(env.CAMPAIGN_ROOT || "Degrees of Horror");
+  const templatesDir = cleanPath(env.TEMPLATES_DIR || "Templates");
   const vault = new Vault({
     bucket: env.VAULT,
     history: env.HISTORY,
@@ -18,16 +20,18 @@ function vaultFor(env: Env) {
     writeAllow,
     stagingPrefix,
     maxFileBytes: 2 * 1024 * 1024,
+    campaignRoot,
+    templatesDir,
   });
-  return { vault, writeAllow, stagingPrefix };
+  return { vault, opts: { writeAllow, stagingPrefix, campaignRoot, templatesDir } };
 }
 
 // Authenticated MCP endpoint. OAuthProvider only lets requests through here
 // once they carry a valid access token issued after GitHub login.
 export const McpApi: ExportedHandler<Env> = {
   fetch(request, env, ctx) {
-    const { vault, writeAllow, stagingPrefix } = vaultFor(env);
-    const handler = createMcpHandler(() => buildServer(vault, writeAllow, stagingPrefix), {
+    const { vault, opts } = vaultFor(env);
+    const handler = createMcpHandler(() => buildServer(vault, opts), {
       route: "/mcp",
       allowedHostnames: [new URL(env.PUBLIC_URL).hostname, "localhost", "127.0.0.1"],
     });
