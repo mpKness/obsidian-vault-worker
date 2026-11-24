@@ -1,0 +1,35 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "obsidian-vault-mcp",
+  "main": "../src/index.ts",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // Serve on your own domain. Remove "routes" to use the workers.dev URL instead
+  // (and set PUBLIC_URL to match).
+
+  "r2_buckets": [
+    // The bucket Obsidian syncs to with Remotely Save.
+    { "binding": "VAULT", "bucket_name": "obsidian-vault" },
+    // Keeps the previous copy of any note Claude overwrites. Kept separate so
+    // it never syncs into Obsidian.
+    { "binding": "HISTORY", "bucket_name": "obsidian-vault-history" }
+  ],
+
+  // OAuth clients, grants and tokens (hashed). Fill in the id from:
+  //   npx wrangler kv namespace create OAUTH_KV
+  "kv_namespaces": [{ "binding": "OAUTH_KV", "id": "REPLACE_WITH_KV_NAMESPACE_ID" }],
+
+  "vars": {
+    "PUBLIC_URL": "http://localhost:8798",
+    "ALLOWED_GITHUB_USERS": "mpKness",
+    // If Remotely Save puts the vault under a folder in the bucket, put it here (e.g. "ETU").
+    "VAULT_PREFIX": "",
+    // Folders Claude may write to directly. "*" = anywhere. Everything else goes through draft_note.
+    "WRITE_ALLOW_PREFIXES": "*",
+    "STAGING_PREFIX": "_Staging"
+  }
+  // Secrets (not in this file):
+  //   npx wrangler secret put GITHUB_CLIENT_ID
+  //   npx wrangler secret put GITHUB_CLIENT_SECRET
+}

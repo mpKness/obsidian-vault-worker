@@ -1,0 +1,11 @@
+{
+  "name": "obsidian-vault-mcp-test",
+  "main": "dev-entry.ts",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "r2_buckets": [
+    { "binding": "VAULT", "bucket_name": "obsidian-vault" },
+    { "binding": "HISTORY", "bucket_name": "obsidian-vault-history" }
+  ],
+  "vars": { "PUBLIC_URL": "http://localhost:8799", "WRITE_ALLOW_PREFIXES": "Characters,Sessions", "STAGING_PREFIX": "_Staging" }
+}
