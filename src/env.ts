@@ -20,4 +20,8 @@ export interface Env {
   WRITE_ALLOW_PREFIXES?: string;
   /** Folder draft_note writes into. Default "_Staging". */
   STAGING_PREFIX?: string;
+  /** Campaign folder for get_campaign_state / create_session_from_template. Default "Degrees of Horror". */
+  CAMPAIGN_ROOT?: string;
+  /** Templates folder. Default "Templates". */
+  TEMPLATES_DIR?: string;
 }
